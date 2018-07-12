@@ -57,6 +57,19 @@ if [[ $DISABLE_UPDATES =~ ^(1|t|T|TRUE|true|True)$ ]] && [[ -f /usr/share/pmm-se
     sed -i "s/fa-refresh/fa-refresh hidden/" /usr/share/pmm-server/landing-page/index.html
 fi
 
+# Perms fix for k8s
+if [[ \
+    "$(id -u pmm)" != "$(stat -c %u /opt/consul-data)" || \
+    "$(id -u pmm)" != "$(stat -c %u /opt/prometheus/data)" || \
+    "$(id -u mysql)" != "$(stat -c %u /var/lib/mysql)" || \
+    "$(id -u grafana)" != "$(stat -c %u /var/lib/grafana)" \
+]]; then
+    chown -R pmm:pmm /opt/consul-data
+    chown -R pmm:pmm /opt/prometheus/data
+    chown -R mysql:mysql /var/lib/mysql
+    chown -R grafana:grafana /var/lib/grafana
+fi
+
 # Upgrade
 if [ -f /var/lib/grafana/grafana.db ]; then
     chown -R pmm:pmm /opt/consul-data
