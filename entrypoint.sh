@@ -8,6 +8,26 @@ if [ -n "${ENABLE_DEBUG}" ]; then
     exec > >(tee -a /var/log/$(basename $0).log) 2>&1
 fi
 
+# Perms fix for k8s
+if [[ \
+    "$(id -u pmm)" != "$(stat -c %u /opt/consul-data)" || \
+    "$(id -u pmm)" != "$(stat -c %u /opt/prometheus/data)" || \
+    "$(id -u mysql)" != "$(stat -c %u /var/lib/mysql)" || \
+    "$(id -u grafana)" != "$(stat -c %u /var/lib/grafana)" \
+]]; then
+    chown -R pmm:pmm /opt/consul-data
+    chown -R pmm:pmm /opt/prometheus/data
+    chown -R mysql:mysql /var/lib/mysql
+    chown -R grafana:grafana /var/lib/grafana
+fi
+
+if [ ! -f /var/lib/mysql/mysql ]; then
+    cp -a /opt/consul-data.orig/{.[!.],}* /opt/consul-data/ || true
+    cp -a /opt/prometheus/data.orig/{.[!.],}* /opt/prometheus/data/ || true
+    cp -a /var/lib/mysql.orig/{.[!.],}* /var/lib/mysql/ || true
+    cp -a /var/lib/grafana.orig/{.[!.],}* /var/lib/grafana/ || true
+fi
+
 # Prometheus
 if [[ ! "${METRICS_RESOLUTION:-1s}" =~ ^[1-5]s$ ]]; then
     echo "METRICS_RESOLUTION takes only values from 1s to 5s."
